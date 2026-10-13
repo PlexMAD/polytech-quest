@@ -1,6 +1,10 @@
 import { Component, StrictMode, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.jsx';
+import { ResultsPage } from './Results.jsx';
+import { MyResultPage } from './MyResult.jsx';
+import { detectBackend } from './api.js';
+import { currentRoute } from './routes.js';
 import './styles.css';
 
 class ErrorBoundary extends Component {
@@ -27,10 +31,16 @@ class ErrorBoundary extends Component {
   }
 }
 
-createRoot(document.getElementById('root')).render(
-  createElement(
-    StrictMode,
-    null,
-    createElement(ErrorBoundary, null, createElement(App)),
-  ),
-);
+const route = currentRoute();
+const pages = { results: ResultsPage, me: MyResultPage };
+const page = pages[route] ? createElement(pages[route]) : createElement(App, { route });
+
+// Переход между маршрутами внутри файла (#/…) — просто перезагружаем страницу.
+window.addEventListener('hashchange', () => window.location.reload());
+
+// Сначала выясняем, есть ли сервер квеста; если нет — работаем в автономном режиме.
+detectBackend().then(() => {
+  createRoot(document.getElementById('root')).render(
+    createElement(StrictMode, null, createElement(ErrorBoundary, null, page)),
+  );
+});
